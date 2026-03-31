@@ -6,11 +6,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model User {
@@ -22,6 +24,7 @@ model User {
   image      String?
   created_at DateTime    @default(now())
   ChatGroup  ChatGroup[]
+  GroupUsers GroupUsers[] 
 
   @@map("users")
 }
@@ -44,9 +47,12 @@ model GroupUsers {
   id         Int       @id @default(autoincrement())
   group      ChatGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
   group_id   String    @db.Uuid
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int
   name       String
   created_at DateTime  @default(now())
 
+  @@unique([group_id, user_id])  // prevents same user joining twice
   @@map("group_users")
 }
 

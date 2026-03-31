@@ -1,0 +1,30 @@
+# FROM node:22-alpine
+
+# WORKDIR /app
+
+# COPY package*.json ./
+
+# RUN npm install
+# RUN npm install sharp
+
+# COPY . .
+
+# RUN npm run build
+
+# EXPOSE 3000
+
+# CMD ["npm", "start"]
+
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+RUN npm install sharp
+COPY . .
+ARG NEXT_PUBLIC_BACKEND_URL
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]

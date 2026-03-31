@@ -37,14 +37,16 @@ export default function ChatBase({
     socket.auth = { room: group.id, userName: user.name };
     socket.connect();
 
-    setOnlineNames((prev) => new Set([...prev, user.name]));
+    // setOnlineNames((prev) => new Set([...prev, user.name]));
+    setOnlineNames((prev) => new Set(Array.from(prev).concat(user.name)));
 
     socket.on("online_users", (names: string[]) => {
-      setOnlineNames((prev) => new Set([...prev, ...names]));
+      // setOnlineNames((prev) => new Set([...prev, ...names]));
+      setOnlineNames((prev) => new Set([...Array.from(prev), ...names]));
     });
 
     socket.on("user_joined", ({ name, created_at }: { name: string; created_at: string }) => {
-      setOnlineNames((prev) => new Set([...prev, name]));
+      setOnlineNames((prev) => new Set([...Array.from(prev), name]));
       setLiveUsers((prev) => {
         const exists = prev.some((u) => u.name === name);
         if (exists) return prev;

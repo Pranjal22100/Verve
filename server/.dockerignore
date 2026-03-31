@@ -6,4 +6,6 @@ build
 *.log
 npm-debug.log*
 .DS_Store
-prisma/migrations
+.git
+.gitignore
+README.md
