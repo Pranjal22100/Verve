@@ -10,7 +10,6 @@ export const getSocket = () => {
   return socket;
 };
 
-// Call this after chatUser is known
 export const connectSocket = (room: string, userName: string) => {
   const s = getSocket();
   s.auth = { room, userName };
