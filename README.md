@@ -27,7 +27,7 @@
 
 **Verve** is a full-stack real-time chat application (Express/TypeScript + Next.js) that allows users to create shareable room links with passcode protection. Friends can join these rooms using Google OAuth authentication and participate in real-time conversations.
 
-The backend uses Kafka for event streaming and Redis for caching to ensure scalability and performance. Socket.io powers real-time messaging, and Prisma ORM manages database schema with PostgreSQL.
+The backend uses Redis (as the Socket.io adapter) for immediate cross-instance real-time broadcasting, and Kafka as an asynchronous, durable event pipeline for persistence. Socket.io powers real-time messaging, and Prisma ORM manages database schema with PostgreSQL.
 
 ## Why the project is useful
 
@@ -72,6 +72,38 @@ The backend uses Kafka for event streaming and Redis for caching to ensure scala
   - Server-side rendering (SSR) support
 
 ## Getting started
+
+## Architecture / Flow
+
+The system uses two parallel mechanisms for handling messages sent by users to ensure both real-time delivery and durable persistence:
+
+- Real-time delivery (immediate): The Express server receives the incoming Socket.io message event. A Redis adapter (used as the Socket.io adapter) immediately broadcasts the message to all connected users in the same room — this broadcast works across multiple Node.js instances and is responsible for real-time cross-instance synchronization.
+- Durable persistence (eventual): In parallel, the backend publishes the same message to a Kafka topic. A Kafka consumer processes that topic asynchronously and persists the message to the `chats` table in PostgreSQL (via Prisma). This ensures messages are durably stored even if persistence is slower or temporarily unavailable.
+
+In short: Redis (Socket.io adapter) = immediate real-time cross-instance broadcasting; Kafka = asynchronous, durable persistence. These are separate, parallel steps: Redis fires immediately, Kafka persists eventually.
+
+![Sequence Diagram](Uml_Diagrams/verve_sequence.png)
+
+![Activity Diagram](Uml_Diagrams/verve_activity.png)
+
+## Database Schema
+
+The database is PostgreSQL managed via Prisma. Key tables and constraints:
+
+- `users`
+  - Stores user records; authentication is Google OAuth only and stored as `provider` + `oauth_id`.
+- `chat_groups`
+  - Chat room metadata. Has `@@index([user_id, created_at])` for efficient lookups of groups by owner and creation time.
+- `group_users`
+  - Join table between users and chat_groups. Has `@@unique([group_id, user_id])` to prevent duplicate membership records.
+- `chats`
+  - Message history. Has `@@index([created_at])` to support fast time-ordered queries.
+
+Additional details:
+- All foreign key relationships use `onDelete: Cascade`.
+- Messages flow: Socket.io + Redis adapter broadcasts in real-time; Kafka consumer persists to `chats` asynchronously.
+
+![ER Diagram](Uml_Diagrams/verve_er.png)
 
 ### Prerequisites
 
